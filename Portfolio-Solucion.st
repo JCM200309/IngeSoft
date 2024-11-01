@@ -286,23 +286,27 @@ test18PortfolioWithMoreThanOneReceptiveAccountKnowsItsAccountSummary
 	
 	! !
 
-!PortfolioTest methodsFor: 'tests' stamp: 'jcm 11/1/2024 11:50:18'!
+!PortfolioTest methodsFor: 'tests' stamp: 'jcm 11/1/2024 15:15:10'!
 test19PortfolioWithoutAccountsKnowsItsTransferNet
 
 	
-	| mainPortfolio |
+	| mainPortfolio report |
 	
 	mainPortfolio := Portfolio new.
 	
-	self assert: mainPortfolio transferNet equals: 0
+	report := Report report: mainPortfolio.
+	
+	self assert: report transferNet equals: 0.
+	
+	
 	
 	! !
 
-!PortfolioTest methodsFor: 'tests' stamp: 'jcm 11/1/2024 11:54:02'!
+!PortfolioTest methodsFor: 'tests' stamp: 'jcm 11/1/2024 15:17:30'!
 test20PortfolioWithAReceptiveAccountKnowsItsTransferNet
 
 	
-	| mainPortfolio account1 account2 |
+	| mainPortfolio account1 account2 report |
 	
 	account1 := ReceptiveAccount new.
 	Deposit register: 20 on: account1.
@@ -315,15 +319,19 @@ test20PortfolioWithAReceptiveAccountKnowsItsTransferNet
 	
 	mainPortfolio := Portfolio with: account1.
 	
-	self assert: mainPortfolio transferNet equals: 50
+	report := Report report: mainPortfolio.
+	
+	self assert: report transferNet equals: 50.
+	
+	
 	
 	! !
 
-!PortfolioTest methodsFor: 'tests' stamp: 'jcm 11/1/2024 12:00:57'!
+!PortfolioTest methodsFor: 'tests' stamp: 'jcm 11/1/2024 15:17:45'!
 test21PortfolioWithMoreThanOneAccountKnowsItsTransferNet
 
 	
-	| mainPortfolio account1 account2 portfolio1 |
+	| mainPortfolio account1 account2 portfolio1 report |
 	
 	account1 := ReceptiveAccount new.
 	Deposit register: 20 on: account1.
@@ -340,7 +348,11 @@ test21PortfolioWithMoreThanOneAccountKnowsItsTransferNet
 	mainPortfolio := Portfolio with: account1.
 	mainPortfolio add: portfolio1.	
 	
-	self assert: mainPortfolio transferNet equals: 0
+	report := Report report: mainPortfolio.
+	
+	self assert: report transferNet equals: 0.
+	
+	
 	! !
 
 
@@ -891,6 +903,11 @@ transferNet
 	
 	^accounts inject: 0 into: [:portfolioAccountSummary :account | portfolioAccountSummary + (account transferNet ) ] ! !
 
+!Portfolio methodsFor: 'transfer Net' stamp: 'jcm 11/1/2024 15:15:57'!
+transferNetOn: aReport
+	
+		^aReport transferNetOfAPortfolioWith: accounts ! !
+
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
 !classDefinition: 'Portfolio class' category: #'Portfolio-Solucion'!
@@ -1020,6 +1037,13 @@ initializeReport: anAccount
 transferNet
 
 	^account transferNetOn: self! !
+
+!Report methodsFor: 'transfer net' stamp: 'jcm 11/1/2024 15:16:56'!
+transferNetOfAPortfolioWith: accounts
+
+	
+	^accounts inject: 0 into: [:portfolioAccountSummary :accountPortfolio | portfolioAccountSummary + (accountPortfolio transferNet ) ] 
+		! !
 
 !Report methodsFor: 'transfer net' stamp: 'jcm 11/1/2024 13:15:37'!
 transferNetOfAReceptiveAccountWith: transactions

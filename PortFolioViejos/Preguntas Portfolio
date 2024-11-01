@@ -1,0 +1,5 @@
+Preguntas portfolio
+
+1) Primero hice el test 8 con Portfolio new, pero desp lo tuve que modificar para cuando meto las cuentas en una OrderedCollection inicie una Collection vacia.
+
+Cosas a cambiar, modificar el test 10 para hacerlo mas declarativo

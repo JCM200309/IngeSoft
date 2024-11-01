@@ -213,23 +213,26 @@ test15PortfolioCanNotIncludeAnyOfTheComposedAccountOfPortfolioToAdd
 			self assert: Portfolio canNotAddAccountErrorMessage equals: anError messageText.
 			self assert: portfolioToModify accountsIsEmpty ]! !
 
-!PortfolioTest methodsFor: 'tests' stamp: 'jcm 11/1/2024 11:02:40'!
+!PortfolioTest methodsFor: 'tests' stamp: 'jcm 11/1/2024 13:31:00'!
 test16PortfolioWithoutAccountsKnowsItsAccountSummary
 
 	
-	| mainPortfolio |
+	| mainPortfolio report |
 	
 	mainPortfolio := Portfolio new.
+	report := Report report: mainPortfolio .
 	
-	self assert: mainPortfolio accountSummary equals: ''.
+	self assert: report accountSummary equals: ''.
+	
+	
 	
 	! !
 
-!PortfolioTest methodsFor: 'tests' stamp: 'jcm 11/1/2024 10:52:47'!
+!PortfolioTest methodsFor: 'tests' stamp: 'jcm 11/1/2024 13:31:32'!
 test17PortfolioWithAReceptiveAccountKnowsItsAccountSummary
 
 	
-	| mainPortfolio account1 |
+	| mainPortfolio account1 report |
 	
 	account1 := ReceptiveAccount new.
 	Deposit register: 20 on: account1.
@@ -237,18 +240,22 @@ test17PortfolioWithAReceptiveAccountKnowsItsAccountSummary
 	
 	mainPortfolio := Portfolio with: account1.
 	
-	self assert: mainPortfolio accountSummary equals: 
+	report := Report report: mainPortfolio .
+	
+	self assert: report accountSummary equals: 
 	'Depósito por 20.' , String lfString ,
 	'Extracción por 10.' , String lfString ,
-	'Balance = 10'.
+	'Balance = 10'..
+	
+	
 	
 	! !
 
-!PortfolioTest methodsFor: 'tests' stamp: 'jcm 11/1/2024 11:13:55'!
+!PortfolioTest methodsFor: 'tests' stamp: 'jcm 11/1/2024 13:32:32'!
 test18PortfolioWithMoreThanOneReceptiveAccountKnowsItsAccountSummary
 
 	
-	| mainPortfolio account1 account2 portfolio1 |
+	| mainPortfolio account1 account2 portfolio1 report |
 	
 	account1 := ReceptiveAccount new.
 	Deposit register: 20 on: account1.
@@ -264,8 +271,9 @@ test18PortfolioWithMoreThanOneReceptiveAccountKnowsItsAccountSummary
 	mainPortfolio := Portfolio with: account1.
 	mainPortfolio add: portfolio1.	
 	
+	report := Report report: mainPortfolio .
 	
-	self assert: mainPortfolio accountSummary equals: 
+	self assert: report accountSummary equals: 
 	'Depósito por 20.' , String lfString ,
 	'Extracción por 10.' , String lfString ,
 	'Entrada por transferencia de 50.' , String lfString ,
@@ -273,7 +281,8 @@ test18PortfolioWithMoreThanOneReceptiveAccountKnowsItsAccountSummary
 	
 	'Depósito por 100.' , String lfString ,
 	'Salida por transferencia de 50.' , String lfString , 
-	'Balance = 50'
+	'Balance = 50'.
+	
 	
 	! !
 
@@ -871,11 +880,10 @@ signalCanNotAddAccount
 	self error: self class canNotAddAccountErrorMessage! !
 
 
-!Portfolio methodsFor: 'AccountSummary' stamp: 'jcm 11/1/2024 11:13:32'!
-accountSummary
+!Portfolio methodsFor: 'AccountSummary' stamp: 'jcm 11/1/2024 13:28:34'!
+accountSummaryOn: aReport
 	
-	
-	^accounts inject: '' into: [:portfolioAccountSummary :account | portfolioAccountSummary , (account accountSummary) ] ! !
+	^aReport accountSummaryOfAPortfolioWith: accounts! !
 
 
 !Portfolio methodsFor: 'transfer Net' stamp: 'jcm 11/1/2024 12:01:23'!
@@ -983,10 +991,10 @@ accountSummary
 		
 	! !
 
-!ReceptiveAccount methodsFor: 'accountSummary' stamp: 'jcm 11/1/2024 13:04:15'!
+!ReceptiveAccount methodsFor: 'accountSummary' stamp: 'jcm 11/1/2024 13:38:54'!
 accountSummaryOn: aReport
 	
-	^aReport accountSummaryOfAReceptiveAccountWith: transactions.! !
+	^aReport accountSummaryOfAReceptiveAccountWith: transactions and: self balance.! !
 
 
 !ReceptiveAccount methodsFor: 'composition' stamp: 'HAW 5/25/2019 12:03:32'!
@@ -1025,11 +1033,18 @@ accountSummary
 	
 	^account accountSummaryOn: self! !
 
-!Report methodsFor: 'Account Summary' stamp: 'jcm 11/1/2024 13:03:55'!
-accountSummaryOfAReceptiveAccountWith: transactions
+!Report methodsFor: 'Account Summary' stamp: 'jcm 11/1/2024 13:29:53'!
+accountSummaryOfAPortfolioWith: portfolioAccounts
+
+	
+
+	^portfolioAccounts inject: '' into: [:portfolioAccountSummary :portfolioAccount | portfolioAccountSummary , (portfolioAccount accountSummaryOn:self) ] ! !
+
+!Report methodsFor: 'Account Summary' stamp: 'jcm 11/1/2024 13:38:35'!
+accountSummaryOfAReceptiveAccountWith: transactions and: balance
 
 	^(transactions inject: '' into:[:summaryString :transaction | summaryString , (transaction stringOfTransaction)])
-	, ('Balance = ' , (account balance) asString).! !
+	, ('Balance = ' , balance asString).! !
 
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 

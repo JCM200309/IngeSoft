@@ -986,27 +986,11 @@ isComposedBy: anAccount
 	^self = anAccount ! !
 
 
-!ReceptiveAccount methodsFor: 'transferNet' stamp: 'jcm 11/1/2024 10:41:50'!
-transferNet
-
-
-	
-	^transactions inject: 0 into: [:currentTransferNet :transaction | currentTransferNet + transaction transferNet]
-		! !
-
 !ReceptiveAccount methodsFor: 'transferNet' stamp: 'jcm 11/1/2024 13:15:21'!
 transferNetOn: aReport
 
 	^aReport transferNetOfAReceptiveAccountWith: transactions! !
 
-
-!ReceptiveAccount methodsFor: 'accountSummary' stamp: 'jcm 11/1/2024 09:38:48'!
-accountSummary
-	
-	^(transactions inject: '' into:[:summaryString :transaction | summaryString , (transaction stringOfTransaction)])
-	, ('Balance = ' , (self balance) asString).
-		
-	! !
 
 !ReceptiveAccount methodsFor: 'accountSummary' stamp: 'jcm 11/1/2024 13:38:54'!
 accountSummaryOn: aReport
@@ -1038,11 +1022,11 @@ transferNet
 
 	^account transferNetOn: self! !
 
-!Report methodsFor: 'transfer net' stamp: 'jcm 11/1/2024 15:16:56'!
+!Report methodsFor: 'transfer net' stamp: 'jcm 11/1/2024 15:30:37'!
 transferNetOfAPortfolioWith: accounts
 
 	
-	^accounts inject: 0 into: [:portfolioAccountSummary :accountPortfolio | portfolioAccountSummary + (accountPortfolio transferNet ) ] 
+	^accounts inject: 0 into: [:portfolioAccountSummary :accountPortfolio | portfolioAccountSummary + (accountPortfolio transferNetOn: self) ] 
 		! !
 
 !Report methodsFor: 'transfer net' stamp: 'jcm 11/1/2024 13:15:37'!

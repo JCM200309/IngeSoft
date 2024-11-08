@@ -10,18 +10,20 @@ createCart
 	
 	^Cart acceptingItemsOf: self defaultCatalogWithPrices! !
 
+!Tests methodsFor: 'support' stamp: 'jcm 11/8/2024 16:05:03'!
+creditCardWithExpiredDate
+
+
+	^CreditCard withNumber: 1234567891234567 withDate: (Date newDay: 8 month:9 year:2024)! !
+
+!Tests methodsFor: 'support' stamp: 'jcm 11/8/2024 16:05:16'!
+creditCardWithInvalidNumber
+
+
+	^CreditCard withNumber: 127 withDate: (Date newDay: 8 month:9 year:2024)! !
+
 !Tests methodsFor: 'support' stamp: 'jcm 11/5/2024 21:28:30'!
 defaultCatalogWithPrices
-	
-	| priceList |
-	
-	priceList := Dictionary newFromPairs: {'validBook' . 5*peso. 'validBook2' .7*peso}.
-	
-	
-	^priceList! !
-
-!Tests methodsFor: 'support' stamp: 'jcm 11/5/2024 21:15:17'!
-defaultPriceList
 	
 	| priceList |
 	
@@ -39,6 +41,12 @@ itemNotSellByTheStore
 itemSellByTheStore
 	
 	^ 'validBook'! !
+
+!Tests methodsFor: 'support' stamp: 'jcm 11/8/2024 16:00:25'!
+validCreditCard
+
+
+	^CreditCard withNumber: 1234567891234567 withDate: (Date newDay: 8 month:9 year:2025)! !
 
 
 !classDefinition: #CartTest category: #TusLibros!
@@ -134,7 +142,6 @@ test08CartRemembersTheNumberOfAddedItems
 	cart add: self itemSellByTheStore withOcurrences: 2.
 	self assert: (cart occurrencesOf: self itemSellByTheStore) = 2! !
 
-
 
 !classDefinition: #CashierTest category: #TusLibros!
 Tests subclass: #CashierTest
@@ -143,62 +150,86 @@ Tests subclass: #CashierTest
 	poolDictionaries: ''
 	category: 'TusLibros'!
 
-!CashierTest methodsFor: 'tests' stamp: 'jcm 11/5/2024 20:27:18'!
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/8/2024 15:59:53'!
 test01ACashierCannotMakeACheckoutToAnEmptyCart
 
-	| cart cashier |
+	| cart cashier creditCard |
 	
 	cashier := Cashier new.
 	cart := self createCart.
-	
-	self should: [cashier checkout: cart] 
+	creditCard := self validCreditCard.
+
+	self should: [cashier checkout: cart with: creditCard] 
 	raise: Error - MessageNotUnderstood 
 	withExceptionDo: [:error | 
 		self assert: error messageText equals: Cashier cannotMakeACheckoutWithAnEmptyCart.
 		self assert: cart isEmpty]! !
 
-!CashierTest methodsFor: 'tests' stamp: 'jcm 11/5/2024 21:09:27'!
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/8/2024 15:59:33'!
 test02AValidCheckoutMadeToACartWithOneItemReturnsTheItemsPrice
 
-	| cart cashier priceList |
+	| cart cashier priceList creditCard |
 	
-	priceList := self defaultPriceList .
+	priceList := self defaultCatalogWithPrices .
 	cashier := Cashier with: priceList.
 	cart := self createCart.
 	cart add: 'validBook'.
-
+	creditCard := self validCreditCard.
 	
-	self assert: (cashier checkout: cart) equals: 5*peso.
+	self assert: (cashier checkout: cart with: creditCard) equals: 5*peso.
 	! !
 
-!CashierTest methodsFor: 'tests' stamp: 'jcm 11/5/2024 21:20:29'!
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/8/2024 15:59:04'!
 test03AValidCheckoutMadeToACartWithMoreThanOneItemReturnsTheItemsPrice
 
-	| cart cashier priceList |
+	| cart cashier priceList creditCard |
 	
-	priceList := self defaultPriceList .
+	priceList := self defaultCatalogWithPrices .
 	cashier := Cashier with: priceList.
 	cart := self createCart.
 	cart add: 'validBook'.
 	cart add: 'validBook2'.
-
+	creditCard := self validCreditCard.
 	
-	self assert: (cashier checkout: cart) equals: 12*peso.
+	self assert: (cashier checkout: cart with: creditCard) equals: 12*peso.
 	! !
 
-!CashierTest methodsFor: 'tests' stamp: 'jcm 11/5/2024 21:23:59'!
-test04AValidCheckoutMadeWithAnExpiredCreditCart
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/8/2024 15:54:56'!
+test04AValidCheckoutMadeWithAnExpiredCreditCard
 
-	| cart cashier priceList |
+	| cart cashier priceList creditCard |
 	
-	priceList := self defaultPriceList .
+	priceList := self defaultCatalogWithPrices .
 	cashier := Cashier with: priceList.
 	cart := self createCart.
 	cart add: 'validBook'.
 	cart add: 'validBook2'.
+	creditCard := self creditCardWithExpiredDate.
 
+	self should: [cashier checkout: cart with: creditCard] 
+	raise: Error - MessageNotUnderstood 
+	withExceptionDo: [:error | 
+		self assert: error messageText equals: Cashier cannotMakeACheckoutWithAnExpiredCreditCard]
+
+	! !
+
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/8/2024 16:04:57'!
+test05AValidCheckoutMadeWithAnInvalidCreditCardNumberCreditCard
+
+	| cart cashier priceList creditCard |
 	
-	self assert: (cashier checkout: cart) equals: 12*peso.
+	priceList := self defaultCatalogWithPrices .
+	cashier := Cashier with: priceList.
+	cart := self createCart.
+	cart add: 'validBook'.
+	cart add: 'validBook2'.
+	creditCard := self creditCardWithInvalidNumber.
+
+	self should: [cashier checkout: cart with: creditCard] 
+	raise: Error - MessageNotUnderstood 
+	withExceptionDo: [:error | 
+		self assert: error messageText equals: Cashier cannotMakeACheckoutWithAnExpiredCreditCard]
+
 	! !
 
 
@@ -299,6 +330,31 @@ assertCartIsNotEmpty: aCart
 
 	aCart isEmpty ifTrue:[self error: self class cannotMakeACheckoutWithAnEmptyCart]! !
 
+!Cashier methodsFor: 'assertions' stamp: 'jcm 11/8/2024 16:07:40'!
+assertValidCreditCard: aCreditCard
+	
+	self validExpirationDate: aCreditCard.
+	self validCardNumber: aCreditCard! !
+
+!Cashier methodsFor: 'assertions' stamp: 'jcm 11/8/2024 16:17:19'!
+validCardNumber: aCreditCard
+
+	| digitsOnCreditCardNumber |
+	
+	digitsOnCreditCardNumber := aCreditCard cardNumber asString size.
+	
+	(digitsOnCreditCardNumber < 16 | digitsOnCreditCardNumber > 16)
+	ifTrue: [self error: self class cannotMakeACheckoutWithAnInvalidCardNumber]! !
+
+!Cashier methodsFor: 'assertions' stamp: 'jcm 11/8/2024 16:07:19'!
+validExpirationDate: aCreditCard
+
+	| fechaModelo |
+	
+	fechaModelo := Date newDay: 8 month:11 year:2024.
+
+	(aCreditCard expirationDate < fechaModelo) ifTrue:[self error: self class cannotMakeACheckoutWithAnExpiredCreditCard]! !
+
 
 !Cashier methodsFor: 'initialize' stamp: 'jcm 11/5/2024 21:00:36'!
 initializeWith: aPriceList
@@ -317,16 +373,37 @@ checkout: aCart
 	
 	! !
 
+!Cashier methodsFor: 'checkout' stamp: 'jcm 11/8/2024 15:42:13'!
+checkout: aCart with: creditCard 
+	
+	
+	self assertCartIsNotEmpty: aCart.
+	self assertValidCreditCard: creditCard.
+	
+	^aCart totalWith: priceList ! !
+
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
 !classDefinition: 'Cashier class' category: #TusLibros!
 Cashier class
 	instanceVariableNames: ''!
 
-!Cashier class methodsFor: 'error messages' stamp: 'jcm 11/5/2024 20:26:09'!
+!Cashier class methodsFor: 'error messages' stamp: 'jcm 11/8/2024 15:52:34'!
 cannotMakeACheckoutWithAnEmptyCart
 
-	'A checkout cannot be made to an empty cart'! !
+
+	^'A checkout cannot be made to an empty cart'! !
+
+!Cashier class methodsFor: 'error messages' stamp: 'jcm 11/8/2024 16:18:56'!
+cannotMakeACheckoutWithAnExpiredCreditCard
+
+
+	^'A checkout cannot be made with an expired credit card'! !
+
+!Cashier class methodsFor: 'error messages' stamp: 'jcm 11/8/2024 16:19:52'!
+cannotMakeACheckoutWithAnInvalidCardNumber
+
+	'A checkout cannot be made with an invalid credit card number '! !
 
 
 !Cashier class methodsFor: 'instance creation' stamp: 'jcm 11/5/2024 21:01:07'!
@@ -334,3 +411,40 @@ with: aPriceList
 
 	^self new initializeWith: aPriceList 
 ! !
+
+
+!classDefinition: #CreditCard category: #TusLibros!
+Object subclass: #CreditCard
+	instanceVariableNames: 'cardNumber expirationDate'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'TusLibros'!
+
+!CreditCard methodsFor: 'expirationDate' stamp: 'jcm 11/8/2024 15:47:38'!
+expirationDate
+
+	^expirationDate copy! !
+
+
+!CreditCard methodsFor: 'cardNumber' stamp: 'jcm 11/8/2024 16:20:54'!
+cardNumber
+	
+	^cardNumber copy! !
+
+
+!CreditCard methodsFor: 'instance creation' stamp: 'jcm 11/8/2024 15:40:21'!
+initializeWithNumber: aCardNumber withDate: anExpirationDate 
+
+	cardNumber := aCardNumber.
+	expirationDate := anExpirationDate.! !
+
+"-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
+
+!classDefinition: 'CreditCard class' category: #TusLibros!
+CreditCard class
+	instanceVariableNames: ''!
+
+!CreditCard class methodsFor: 'instance creation' stamp: 'jcm 11/8/2024 15:40:02'!
+withNumber: aCardNumber withDate: anExpirationDate
+	
+	^self new initializeWithNumber: aCardNumber withDate: anExpirationDate ! !

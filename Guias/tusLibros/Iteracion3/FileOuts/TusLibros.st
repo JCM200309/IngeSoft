@@ -119,11 +119,11 @@ test05anUnknownCartCannotBeListedAndTheOtherCartsRemainsTheSame
 
 	! !
 
-!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/9/2024 17:38:55'!
+!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/11/2024 16:40:49'!
 test06aKnownCartCanBeCheckedOut
 
 
-	| clientAutenticator clientId password cartInterface cartId cart cashier salesBook |
+	| clientAutenticator clientId password cartInterface cartId validCreditCardExpirationDate validCreditCardNumber validCreditCardOwnersName |
 	
 	clientId := testObjectsFactory validUserId .
 	password := testObjectsFactory validUserPassword .
@@ -134,22 +134,19 @@ test06aKnownCartCanBeCheckedOut
 	
 	cartId := cartInterface createCartTo: clientId with: password  throught: clientAutenticator.
 	
-	cart := cartInterface cartFor: cartId.
-	
 	cartInterface add: 2 Of: testObjectsFactory itemSellByTheStore To: cartId.
 	
-	salesBook := OrderedCollection new.
-	
-	
-	cashier := Cashier 
-		toCheckout: cart
-		charging:  testObjectsFactory notExpiredCreditCard
-		throught: (MerchantProcesor with: testObjectsFactory defaultDebitBehavior)
-		on:  testObjectsFactory today
-		registeringOn: salesBook.
+	validCreditCardNumber := testObjectsFactory validCreditCardNumber.
+	validCreditCardExpirationDate := testObjectsFactory validCreditCardExpirationDate .
+	validCreditCardOwnersName := testObjectsFactory validCreditCardOwnersName .
 	
 	
 	"Tendria que hacer el checkOutCart para que le mande a la interfaz y esta cree el cashier y forwardee a cart para que pueda hacer el checkout"
+	self assert: (cartInterface 
+		checkOutCart: cartId 
+		withCardNumber: validCreditCardNumber 
+		withExpirationDate: validCreditCardExpirationDate 
+		withOwnerName: validCreditCardOwnersName) equals: (testObjectsFactory itemSellByTheStorePrice * 2)
 	! !
 
 
@@ -273,7 +270,7 @@ debit: anAmount from: aCreditCard
 	^debitBehavior value: anAmount value: aCreditCard ! !
 
 
-!CashierTest methodsFor: 'tests' stamp: 'jcm 11/9/2024 16:49:05'!
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/11/2024 16:17:08'!
 test01CanNotCheckoutAnEmptyCart
 
 	| salesBook |
@@ -282,7 +279,7 @@ test01CanNotCheckoutAnEmptyCart
 	self 
 		should: [ Cashier 
 			toCheckout: testObjectsFactory createCart 
-			charging: testObjectsFactory notExpiredCreditCard 
+			charging: testObjectsFactory createValidCreditCard 
 			throught: (MerchantProcesor with: testObjectsFactory defaultDebitBehavior)
 			on: testObjectsFactory today
 			registeringOn:  salesBook ]
@@ -291,7 +288,7 @@ test01CanNotCheckoutAnEmptyCart
 			self assert: anError messageText = Cashier cartCanNotBeEmptyErrorMessage.
 			self assert: salesBook isEmpty ]! !
 
-!CashierTest methodsFor: 'tests' stamp: 'jcm 11/9/2024 16:42:00'!
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/11/2024 16:17:38'!
 test02CalculatedTotalIsCorrect
 
 	| cart cashier |
@@ -301,14 +298,14 @@ test02CalculatedTotalIsCorrect
 	
 	cashier :=  Cashier
 		toCheckout: cart 
-		charging: testObjectsFactory notExpiredCreditCard 
+		charging: testObjectsFactory createValidCreditCard 
 		throught: (MerchantProcesor with: testObjectsFactory defaultDebitBehavior)
 		on: testObjectsFactory today 
 		registeringOn: OrderedCollection new.
 		
 	self assert: cashier checkOut equals: (testObjectsFactory itemSellByTheStorePrice * 2)! !
 
-!CashierTest methodsFor: 'tests' stamp: 'jcm 11/9/2024 16:53:16'!
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/11/2024 16:20:22'!
 test03CanNotCheckoutWithAnExpiredCreditCart
 
 	| cart salesBook |
@@ -320,7 +317,7 @@ test03CanNotCheckoutWithAnExpiredCreditCart
 	self
 		should: [ Cashier 
 				toCheckout: cart 
-				charging: testObjectsFactory expiredCreditCard 
+				charging: testObjectsFactory createInvalidCreditCard 
 				throught: (MerchantProcesor with: testObjectsFactory defaultDebitBehavior)
 				on: testObjectsFactory today
 				registeringOn: salesBook ]
@@ -329,7 +326,7 @@ test03CanNotCheckoutWithAnExpiredCreditCart
 			self assert: anError messageText = Cashier canNotChargeAnExpiredCreditCardErrorMessage.
 			self assert: salesBook isEmpty ]! !
 
-!CashierTest methodsFor: 'tests' stamp: 'jcm 11/9/2024 16:53:31'!
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/11/2024 16:20:34'!
 test04CheckoutRegistersASale
 
 	| cart cashier salesBook total |
@@ -340,7 +337,7 @@ test04CheckoutRegistersASale
  
 	cashier:= Cashier 
 		toCheckout: cart 
-		charging: testObjectsFactory notExpiredCreditCard
+		charging: testObjectsFactory createValidCreditCard 
 		throught: (MerchantProcesor with: testObjectsFactory defaultDebitBehavior)
 		on: testObjectsFactory today
 		registeringOn: salesBook.
@@ -350,14 +347,14 @@ test04CheckoutRegistersASale
 	self assert: salesBook size = 1.
 	self assert: salesBook first total = total.! !
 
-!CashierTest methodsFor: 'tests' stamp: 'jcm 11/9/2024 16:56:33'!
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/11/2024 16:20:40'!
 test05CashierChargesCreditCardUsingMerchantProcessor
 
 	| cart cashier salesBook total creditCard debitedAmout debitedCreditCard  |
 
 	cart := testObjectsFactory createCart.
 	cart add: testObjectsFactory itemSellByTheStore.
-	creditCard := testObjectsFactory notExpiredCreditCard.
+	creditCard := testObjectsFactory createValidCreditCard .
 	salesBook := OrderedCollection new.
  
 	cashier:= Cashier 
@@ -372,14 +369,14 @@ test05CashierChargesCreditCardUsingMerchantProcessor
 	self assert: debitedCreditCard = creditCard.
 	self assert: debitedAmout = total.! !
 
-!CashierTest methodsFor: 'tests' stamp: 'HAW 11/8/2024 13:46:36'!
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/11/2024 16:20:46'!
 test05WithMock_CashierChargesCreditCardUsingMerchantProcessor
 
 	| cart cashier salesBook total creditCard merchantProcessor mpReceivedMessages debitFromMessage |
 
 	cart := testObjectsFactory createCart.
 	cart add: testObjectsFactory itemSellByTheStore.
-	creditCard := testObjectsFactory notExpiredCreditCard.
+	creditCard := testObjectsFactory createValidCreditCard .
 	salesBook := OrderedCollection new.
 	merchantProcessor := Mock onlyCollecting.
  
@@ -400,14 +397,14 @@ test05WithMock_CashierChargesCreditCardUsingMerchantProcessor
 	self assert: debitFromMessage arguments second equals: creditCard 
 	! !
 
-!CashierTest methodsFor: 'tests' stamp: 'jcm 11/9/2024 16:57:18'!
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/11/2024 16:20:52'!
 test06CashierDoesNotSaleWhenTheCreditCardHasNoCredit
 
 	| cart cashier salesBook creditCard |
 
 	cart := testObjectsFactory createCart.
 	cart add: testObjectsFactory itemSellByTheStore.
-	creditCard := testObjectsFactory notExpiredCreditCard.
+	creditCard := testObjectsFactory createValidCreditCard .
 	salesBook := OrderedCollection new.
  	
 	cashier:= Cashier 
@@ -424,14 +421,14 @@ test06CashierDoesNotSaleWhenTheCreditCardHasNoCredit
 			self assert: anError messageText = Cashier creditCardHasNoCreditErrorMessage.
 			self assert: salesBook isEmpty ]! !
 
-!CashierTest methodsFor: 'tests' stamp: 'HAW 11/8/2024 13:38:36'!
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/11/2024 16:20:56'!
 test06WithMock_CashierDoesNotSaleWhenTheCreditCardHasNoCredit
 
 	| cart cashier salesBook creditCard merchantProcessor |
 
 	cart := testObjectsFactory createCart.
 	cart add: testObjectsFactory itemSellByTheStore.
-	creditCard := testObjectsFactory notExpiredCreditCard.
+	creditCard := testObjectsFactory createValidCreditCard .
 	salesBook := OrderedCollection new.
  	merchantProcessor := Mock whenReceives: #debit:from: do: [ :amount :aCreditCard | self error: Cashier creditCardHasNoCreditErrorMessage ].
 	
@@ -571,7 +568,7 @@ acceptingItemsOf: aCatalog
 
 !classDefinition: #CartInterface category: #TusLibros!
 Object subclass: #CartInterface
-	instanceVariableNames: 'cartId carts objectsFactory'
+	instanceVariableNames: 'cartId carts objectsFactory transactions'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'TusLibros'!
@@ -626,6 +623,31 @@ initializeWith: anObjectsFactory
 	objectsFactory := anObjectsFactory.
 	cartId := 1.
 	carts := OrderedCollection new.! !
+
+
+!CartInterface methodsFor: 'checkOutCart' stamp: 'jcm 11/11/2024 17:21:54'!
+checkOutCart: cartsId withCardNumber: creditCardNumber withExpirationDate: creditCardExpirationDate withOwnerName: creditCardOwnersName
+
+	| creditCard merchantProcesor cashier cart transaction transactionsId |
+	
+	creditCard := CreditCard number: creditCardNumber expiringOn: creditCardExpirationDate ownersName: creditCardOwnersName .
+	merchantProcesor := MerchantProcesor with: objectsFactory defaultDebitBehavior.
+	cart := carts at: cartsId.
+	cashier := Cashier toCheckout: cart charging: creditCard throught: merchantProcesor on: objectsFactory today registeringOn: OrderedCollection new.
+	
+	"Si llego hasta aca es porque no tiro error, entonces habria que devolver el transactionID en donde va a estar alocada la compra"
+	"Tendria que hacer que cashier checkout me devuelva como un recibo en donde tenga la lista de lo que compre y el total"
+	
+	transaction := cashier checkOut.
+	
+	"Asumo que transaction ID no es la el id de la transaccion de la tarjeta de credito para trascear la transaccion, sino que es el id del supermercado para poder trascear el recibo"
+	
+	"El tema que no tendria que ser responsabilidad de la cartInterface guardar las transacciones, por lo tanto no lo almaceno en esta, sino que la almaceno en la cashier"
+	
+	
+	^self transactionsId
+	
+	! !
 
 
 !CartInterface methodsFor: 'cart' stamp: 'jcm 11/9/2024 16:05:03'!
@@ -815,7 +837,7 @@ with: aValidCredentialsCatalog
 
 !classDefinition: #CreditCard category: #TusLibros!
 Object subclass: #CreditCard
-	instanceVariableNames: 'expiration'
+	instanceVariableNames: 'expiration ownersName number'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'TusLibros'!
@@ -826,10 +848,14 @@ isExpiredOn: aDate
 	^expiration start < (Month month: aDate monthIndex year: aDate yearNumber) start ! !
 
 
-!CreditCard methodsFor: 'initialization' stamp: 'HernanWilkinson 6/17/2013 18:38'!
-initializeExpiringOn: aMonth 
-	
-	expiration := aMonth ! !
+!CreditCard methodsFor: 'initialization' stamp: 'jcm 11/11/2024 16:16:32'!
+initializeWith: aCardNumber with: anExpirationDate and: theOwnersName
+
+	ownersName := theOwnersName.
+	number := aCardNumber.
+	expiration := anExpirationDate 
+
+! !
 
 "-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
 
@@ -841,6 +867,12 @@ CreditCard class
 expiringOn: aMonth 
 	
 	^self new initializeExpiringOn: aMonth! !
+
+!CreditCard class methodsFor: 'instance creation' stamp: 'jcm 11/11/2024 16:15:31'!
+number: aCardNumber expiringOn: anExpirationDate ownersName: theOwnersName
+
+
+	^self new initializeWith: aCardNumber with: anExpirationDate and:theOwnersName.! !
 
 
 !classDefinition: #MerchantProcesor category: #TusLibros!
@@ -930,15 +962,50 @@ initialize
 	cartId := 0.! !
 
 
+!StoreTestObjectsFactory methodsFor: 'credit card' stamp: 'jcm 11/11/2024 16:18:58'!
+createInvalidCreditCard
+
+	^CreditCard number: self invalidCreditCardNumber expiringOn: (Month month: today monthIndex year: today yearNumber - 1) ownersName: self invalidCreditCardOwnersName.! !
+
+!StoreTestObjectsFactory methodsFor: 'credit card' stamp: 'jcm 11/11/2024 16:13:28'!
+createValidCreditCard
+
+	^CreditCard number: self validCreditCardNumber expiringOn: (Month month: today monthIndex year: today yearNumber + 1) ownersName: self validCreditCardOwnersName.! !
+
 !StoreTestObjectsFactory methodsFor: 'credit card' stamp: 'HernanWilkinson 6/17/2013 18:37'!
 expiredCreditCard
 	
 	^CreditCard expiringOn: (Month month: today monthIndex year: today yearNumber - 1)! !
 
+!StoreTestObjectsFactory methodsFor: 'credit card' stamp: 'jcm 11/11/2024 16:18:38'!
+invalidCreditCardNumber
+
+	^123456789 ! !
+
+!StoreTestObjectsFactory methodsFor: 'credit card' stamp: 'jcm 11/11/2024 16:18:48'!
+invalidCreditCardOwnersName
+
+	^'Juan Cruz'! !
+
 !StoreTestObjectsFactory methodsFor: 'credit card' stamp: 'HernanWilkinson 6/17/2013 18:36'!
 notExpiredCreditCard
 	
 	^CreditCard expiringOn: (Month month: today monthIndex year: today yearNumber + 1)! !
+
+!StoreTestObjectsFactory methodsFor: 'credit card' stamp: 'jcm 11/11/2024 16:23:32'!
+validCreditCardExpirationDate
+	
+	^Month month: today monthIndex year: today yearNumber + 1! !
+
+!StoreTestObjectsFactory methodsFor: 'credit card' stamp: 'jcm 11/11/2024 16:13:06'!
+validCreditCardNumber
+
+	^1234567891234567 ! !
+
+!StoreTestObjectsFactory methodsFor: 'credit card' stamp: 'jcm 11/11/2024 16:13:23'!
+validCreditCardOwnersName
+
+	^'Pepe'! !
 
 
 !StoreTestObjectsFactory methodsFor: 'cart' stamp: 'HernanWilkinson 6/17/2013 18:08'!
@@ -952,7 +1019,6 @@ defaultCatalog
 	^ Dictionary new
 		at: self itemSellByTheStore put: self itemSellByTheStorePrice;
 		yourself ! !
-
 
 
 !StoreTestObjectsFactory methodsFor: 'clientAutenticator' stamp: 'jcm 11/9/2024 14:05:54'!

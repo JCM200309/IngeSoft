@@ -130,11 +130,11 @@ test05anUnknownCartCannotBeListedAndTheOtherCartsRemainsTheSame
 
 	! !
 
-!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 12:45:03'!
+!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 15:07:17'!
 test06aKnownCartCanBeCheckedOut
 
 
-	| clientAutenticator clientId password cartInterface cartId validCreditCardExpirationDate validCreditCardNumber validCreditCardOwnersName |
+	| clientAutenticator clientId password cartInterface cartId validCreditCardExpirationDate validCreditCardNumber validCreditCardOwnersName receipt |
 	
 	clientId := testObjectsFactory validUserId .
 	password := testObjectsFactory validUserPassword .
@@ -154,12 +154,15 @@ test06aKnownCartCanBeCheckedOut
 	
 	"Tendria que hacer el checkOutCart para que le mande a la interfaz y esta cree el cashier y forwardee a cart para que pueda hacer el checkout"
 	
-	"Por ahora asumo que checkOutCart devuelve el total de los productos por ahora"
-	self assert: (cartInterface 
+	receipt := cartInterface 
 		checkOutCart: cartId 
 		withCardNumber: validCreditCardNumber 
 		withExpirationDate: validCreditCardExpirationDate 
-		withOwnerName: validCreditCardOwnersName) equals: (testObjectsFactory itemSellByTheStorePrice * 2)
+		withOwnerName: validCreditCardOwnersName.
+	
+	
+	"Por ahora asumo que checkOutCart devuelve el total de los productos por ahora"
+	self assert: receipt total equals: (testObjectsFactory itemSellByTheStorePrice * 2)
 	! !
 
 !CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 13:18:53'!
@@ -200,49 +203,11 @@ test07anUnknownCartCannotBeCheckedOut
 			self assert: cartInterface numberOfCarts = previousNumberOfCarts]
 	! !
 
-!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 13:46:34'!
-test08
-
-
-	| clientAutenticator clientId password cartInterface cartId validCreditCardExpirationDate validCreditCardNumber validCreditCardOwnersName previousNumberOfCarts unknownCartId |
-	
-	clientId := testObjectsFactory validUserId .
-	password := testObjectsFactory validUserPassword .
-	
-	clientAutenticator := testObjectsFactory createClientAutenticator.
-	
-	cartInterface := CartInterface with: testObjectsFactory .
-	
-	cartId := cartInterface createCartTo: clientId with: password  throught: clientAutenticator.
-	
-	cartInterface add: 2 Of: testObjectsFactory itemSellByTheStore To: cartId.
-	
-	validCreditCardNumber := testObjectsFactory validCreditCardNumber.
-	validCreditCardExpirationDate := testObjectsFactory validCreditCardExpirationDate .
-	validCreditCardOwnersName := testObjectsFactory validCreditCardOwnersName .
-	
-	previousNumberOfCarts := cartInterface numberOfCarts.
-	
-	unknownCartId := cartInterface createCartId.
-	
-	
-	self 
-		should: [ cartInterface 
-			checkOutCart:  unknownCartId
-			withCardNumber:  validCreditCardNumber 
-			withExpirationDate:  validCreditCardExpirationDate 
-			withOwnerName: validCreditCardOwnersName ]
-		raise: Error - MessageNotUnderstood
-		withExceptionDo: [ :anError |
-			self assert: anError messageText = CartInterface unknownCartId.
-			self assert: cartInterface numberOfCarts = previousNumberOfCarts]
-	! !
-
-!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 13:52:12'!
+!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 15:37:05'!
 test08aValidCustomerKnowsItsPurchaseRecord
 
 
-	| clientAutenticator clientId password cartInterface cartId validCreditCardExpirationDate validCreditCardNumber validCreditCardOwnersName previousNumberOfCarts unknownCartId |
+	| clientAutenticator clientId password cartInterface cartId validCreditCardExpirationDate validCreditCardNumber validCreditCardOwnersName cartId2 |
 	
 	clientId := testObjectsFactory validUserId .
 	password := testObjectsFactory validUserPassword .
@@ -259,9 +224,9 @@ test08aValidCustomerKnowsItsPurchaseRecord
 	validCreditCardExpirationDate := testObjectsFactory validCreditCardExpirationDate .
 	validCreditCardOwnersName := testObjectsFactory validCreditCardOwnersName .
 	
-	previousNumberOfCarts := cartInterface numberOfCarts.
+	cartId2 := cartInterface createCartTo: clientId with: password  throught: clientAutenticator.
 	
-	unknownCartId := cartInterface createCartId.
+	cartInterface add: 1 Of: testObjectsFactory itemSellByTheStore To: cartId2.
 	
 	"Ahora si tengo que crear una estructura para almacenar las Sales por cada cliente"
 	
@@ -270,9 +235,15 @@ test08aValidCustomerKnowsItsPurchaseRecord
 		withCardNumber: validCreditCardNumber 
 		withExpirationDate: validCreditCardExpirationDate 
 		withOwnerName: validCreditCardOwnersName.
+		
+	cartInterface 
+		checkOutCart: cartId2
+		withCardNumber: validCreditCardNumber 
+		withExpirationDate: validCreditCardExpirationDate 
+		withOwnerName: validCreditCardOwnersName.
 	
 
-	self assert: (cartInterface listPurchasesOf: clientId with: password) total equals: (testObjectsFactory itemSellByTheStorePrice * 2).
+	self assert: (cartInterface listPurchasesOf: clientId with: password) equals: 'validBook|3|30'.
 	! !
 
 
@@ -414,7 +385,7 @@ test01CanNotCheckoutAnEmptyCart
 			self assert: anError messageText = Cashier cartCanNotBeEmptyErrorMessage.
 			self assert: salesBook isEmpty ]! !
 
-!CashierTest methodsFor: 'tests' stamp: 'jcm 11/11/2024 16:17:38'!
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 15:05:22'!
 test02CalculatedTotalIsCorrect
 
 	| cart cashier |
@@ -429,7 +400,7 @@ test02CalculatedTotalIsCorrect
 		on: testObjectsFactory today 
 		registeringOn: OrderedCollection new.
 		
-	self assert: cashier checkOut equals: (testObjectsFactory itemSellByTheStorePrice * 2)! !
+	self assert: cashier checkOut total equals: (testObjectsFactory itemSellByTheStorePrice * 2)! !
 
 !CashierTest methodsFor: 'tests' stamp: 'jcm 11/11/2024 16:20:22'!
 test03CanNotCheckoutWithAnExpiredCreditCart
@@ -452,7 +423,7 @@ test03CanNotCheckoutWithAnExpiredCreditCart
 			self assert: anError messageText = Cashier canNotChargeAnExpiredCreditCardErrorMessage.
 			self assert: salesBook isEmpty ]! !
 
-!CashierTest methodsFor: 'tests' stamp: 'jcm 11/11/2024 16:20:34'!
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 15:05:51'!
 test04CheckoutRegistersASale
 
 	| cart cashier salesBook total |
@@ -468,12 +439,12 @@ test04CheckoutRegistersASale
 		on: testObjectsFactory today
 		registeringOn: salesBook.
 		
-	total := cashier checkOut.
+	total := cashier checkOut total.
 					
 	self assert: salesBook size = 1.
 	self assert: salesBook first total = total.! !
 
-!CashierTest methodsFor: 'tests' stamp: 'jcm 11/11/2024 16:20:40'!
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 15:06:02'!
 test05CashierChargesCreditCardUsingMerchantProcessor
 
 	| cart cashier salesBook total creditCard debitedAmout debitedCreditCard  |
@@ -490,12 +461,12 @@ test05CashierChargesCreditCardUsingMerchantProcessor
 		on: testObjectsFactory today
 		registeringOn: salesBook.
 		
-	total := cashier checkOut.
+	total := cashier checkOut total.
 					
 	self assert: debitedCreditCard = creditCard.
 	self assert: debitedAmout = total.! !
 
-!CashierTest methodsFor: 'tests' stamp: 'jcm 11/11/2024 16:20:46'!
+!CashierTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 15:06:17'!
 test05WithMock_CashierChargesCreditCardUsingMerchantProcessor
 
 	| cart cashier salesBook total creditCard merchantProcessor mpReceivedMessages debitFromMessage |
@@ -513,7 +484,7 @@ test05WithMock_CashierChargesCreditCardUsingMerchantProcessor
 		on: testObjectsFactory today
 		registeringOn: salesBook.
 		
-	total := cashier checkOut.
+	total := cashier checkOut total.
 	mpReceivedMessages := merchantProcessor receivedMessages.
 					
 	self assert: 1 equals: mpReceivedMessages size.
@@ -649,6 +620,12 @@ assertIsValidQuantity: aQuantity
 	aQuantity strictlyPositive ifFalse: [ self error: self invalidQuantityErrorMessage ]! !
 
 
+!Cart methodsFor: 'items' stamp: 'jcm 11/12/2024 15:03:03'!
+items
+
+	^items copy
+	! !
+
 !Cart methodsFor: 'items' stamp: 'jcm 11/9/2024 15:49:37'!
 itemsAsString
 
@@ -688,10 +665,19 @@ acceptingItemsOf: aCatalog
 
 !classDefinition: #CartInterface category: #TusLibros!
 Object subclass: #CartInterface
-	instanceVariableNames: 'cartId carts objectsFactory transactions'
+	instanceVariableNames: 'cartId carts objectsFactory transactions receipts cartOwner'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'TusLibros'!
+
+!CartInterface methodsFor: 'adding' stamp: 'jcm 11/12/2024 15:34:23'!
+addReceipt: aReceipt to: anUserId
+
+
+	(receipts includesKey: anUserId) 
+		ifTrue: [(receipts at: anUserId) add: aReceipt]
+		ifFalse:[receipts at: anUserId put: (OrderedCollection with: aReceipt)]! !
+
 
 !CartInterface methodsFor: 'createCart' stamp: 'jcm 11/9/2024 14:13:18'!
 createCartId
@@ -700,25 +686,21 @@ createCartId
 	
 	^cartId  - 1! !
 
-!CartInterface methodsFor: 'createCart' stamp: 'jcm 11/9/2024 14:24:48'!
+!CartInterface methodsFor: 'createCart' stamp: 'jcm 11/12/2024 14:50:07'!
 createCartTo: clientId with: password throught: clientAutenticator 
 	
 	
 	| currentCartId |
 	clientAutenticator assertValidClientId: clientId and: password.
-	
 	"Aca pense en crear un servicio aparte que me de el id del carrito pero me parecio mucho"
-	
 	currentCartId := self createCartId.
 	carts add: objectsFactory createCart.
+	cartOwner at: currentCartId put: clientId.
 	
-	^currentCartId 
-	
-	
-	! !
+	^currentCartId ! !
 
 
-!CartInterface methodsFor: 'listCart' stamp: 'jcm 11/9/2024 15:51:58'!
+!CartInterface methodsFor: 'list' stamp: 'jcm 11/9/2024 15:51:58'!
 listCart: aCartId
 	| cart |
 	
@@ -730,7 +712,30 @@ listCart: aCartId
 	^cart listItems.
 	! !
 
-!CartInterface methodsFor: 'listCart' stamp: 'jcm 11/12/2024 12:31:52'!
+!CartInterface methodsFor: 'list' stamp: 'jcm 11/12/2024 15:47:21'!
+listPurchasesOf: aClientId with: aClientsPassword
+
+	"Habria que acceder al recibo y devolver por ahi el string que contenga los items y el total"
+	
+	
+	|totalAmount |
+	
+	totalAmount := (receipts at: aClientId) sum:[:receipt | receipt total].
+	
+	"De todos los recibos quisiera como armar uno solo, en donde tenga de todas las compras por cada libro, la cantidad que compre en total"
+	
+	"Para esto itero receipts y voy agregando los elementos a un nuevo diccionario"
+	"purchasedItems := Dictionary new.
+	
+	
+	^(receipts at: aClientId) do:[:receipt | receipt ]."
+	
+	
+	
+	
+	! !
+
+!CartInterface methodsFor: 'list' stamp: 'jcm 11/12/2024 12:31:52'!
 numberOfCarts
 
 	^carts size! !
@@ -742,18 +747,20 @@ assertValidCartId: aCartId.
 	carts size < aCartId ifTrue:[self error: self class unknownCartId]! !
 
 
-!CartInterface methodsFor: 'instance creation' stamp: 'jcm 11/9/2024 14:24:10'!
+!CartInterface methodsFor: 'instance creation' stamp: 'jcm 11/12/2024 14:50:01'!
 initializeWith: anObjectsFactory 
 	
 	objectsFactory := anObjectsFactory.
 	cartId := 1.
-	carts := OrderedCollection new.! !
+	carts := OrderedCollection new.
+	receipts := Dictionary new.
+	cartOwner := Dictionary new.! !
 
 
-!CartInterface methodsFor: 'checkOutCart' stamp: 'jcm 11/12/2024 13:54:31'!
+!CartInterface methodsFor: 'checkOutCart' stamp: 'jcm 11/12/2024 15:26:35'!
 checkOutCart: cartsId withCardNumber: creditCardNumber withExpirationDate: creditCardExpirationDate withOwnerName: creditCardOwnersName
 
-	| creditCard merchantProcesor cashier cart recibo |
+	| creditCard merchantProcesor cashier cart receipt userId |
 	
 	self assertValidCartId: cartsId.
 	
@@ -768,10 +775,21 @@ checkOutCart: cartsId withCardNumber: creditCardNumber withExpirationDate: credi
 	"La idea es hacer que cashier checkout me devuelva un recibo para asi poder almacenarlo en un diccionario bajo el id del cliente"
 	
 	
-	recibo := cashier checkOut.
+	
+	receipt := cashier checkOut.
+	
+	"Ahora habria que almacenar este recibo en una lista de recibos que puedan ser encontradas por el userId"
+	
+	"Modifique cartInterface para que almacene un diccionario con CartsId cuyos valores sean los ids del usuario que los creo"
+	
+	userId := cartOwner at: cartsId.
+	
+	self addReceipt: receipt to: userId.
 	
 	
 	
+	^receipt
+	 
 	! !
 
 
@@ -854,14 +872,14 @@ registerSale
 	salesBook add: self createSale! !
 
 
-!Cashier methodsFor: 'checkout' stamp: 'HernanWilkinson 6/17/2013 19:06'!
+!Cashier methodsFor: 'checkout' stamp: 'jcm 11/12/2024 14:55:54'!
 checkOut
 
 	self calculateTotal.
 	self debitTotal.
 	self registerSale.
 
-	^ total! !
+	^ Receipt purchasedItems: cart items withTotal: total! !
 
 
 !Cashier methodsFor: 'initialization' stamp: 'HernanWilkinson 6/17/2013 18:53'!
@@ -1028,6 +1046,37 @@ MerchantProcesor class
 with: aDebitBehaviour
 
 	^self new initializeWith: aDebitBehaviour ! !
+
+
+!classDefinition: #Receipt category: #TusLibros!
+Object subclass: #Receipt
+	instanceVariableNames: 'items total'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'TusLibros'!
+
+
+!Receipt methodsFor: 'instance creation' stamp: 'jcm 11/12/2024 14:59:09'!
+initializeWith: cartItems with:aSaleTotal
+
+	items := cartItems.
+	total := aSaleTotal.! !
+
+!Receipt methodsFor: 'instance creation' stamp: 'jcm 11/12/2024 15:05:13'!
+total
+	
+	^total! !
+
+"-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- "!
+
+!classDefinition: 'Receipt class' category: #TusLibros!
+Receipt class
+	instanceVariableNames: ''!
+
+!Receipt class methodsFor: 'as yet unclassified' stamp: 'jcm 11/12/2024 14:57:03'!
+purchasedItems: cartItems withTotal: aSaleTotal
+
+	^self new initializeWith: cartItems with:aSaleTotal.! !
 
 
 !classDefinition: #Sale category: #TusLibros!

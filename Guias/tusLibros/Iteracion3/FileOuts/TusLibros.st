@@ -30,7 +30,7 @@ test01UserWithInvalidCredentialsCannotCreateACart
 			self assert: anError messageText = ClientAutenticator invalidAutenticationErrorMensage ]
 	! !
 
-!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/9/2024 16:06:32'!
+!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 12:29:39'!
 test02UserWithValidCredentialsCanCreateAnEmptyCart
 
 	| clientAutenticator clientId password cartInterface cartId |
@@ -44,14 +44,14 @@ test02UserWithValidCredentialsCanCreateAnEmptyCart
 	
 	cartId := cartInterface createCartTo: clientId with: password  throught: clientAutenticator.
 	
-	self assert: (cartInterface listCart: cartId) equals: ''. 
+	self assert: (cartInterface listCart: cartId) isEmpty. 
 	! !
 
-!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/9/2024 16:04:11'!
+!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 12:33:33'!
 test03ItCannotBeAddedToAnUnknownCart
 
 
-	| clientAutenticator clientId password cartInterface unknownCartId |
+	| clientAutenticator clientId password cartInterface unknownCartId previousNumberOfCarts |
 	
 	clientId := testObjectsFactory validUserId .
 	password := testObjectsFactory validUserPassword .
@@ -59,24 +59,28 @@ test03ItCannotBeAddedToAnUnknownCart
 	clientAutenticator := testObjectsFactory createClientAutenticator.
 	
 	cartInterface := CartInterface with: testObjectsFactory .
-	
+
 	cartInterface createCartTo: clientId with: password  throught: clientAutenticator.
+	
+	previousNumberOfCarts := cartInterface numberOfCarts.
+	
 	unknownCartId := cartInterface createCartId.
 	
 	self 
 		should: [ cartInterface add: 3 Of: testObjectsFactory itemSellByTheStore To: unknownCartId  ]
 		raise: Error - MessageNotUnderstood
 		withExceptionDo: [ :anError |
-			self assert: anError messageText = CartInterface unknownCartId ]
+			self assert: anError messageText = CartInterface unknownCartId.
+			self assert: previousNumberOfCarts = cartInterface numberOfCarts]
 	
 	! !
 
-!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/9/2024 16:07:36'!
+!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 13:45:50'!
 test04aKnownCartRemebersItsItemsAndQuantities
 
 	
 
-	| clientAutenticator clientId password cartInterface cartId |
+	| clientAutenticator clientId password cartInterface cartId cartItems |
 	
 	clientId := testObjectsFactory validUserId .
 	password := testObjectsFactory validUserPassword .
@@ -90,15 +94,18 @@ test04aKnownCartRemebersItsItemsAndQuantities
 	cartInterface add: 2 Of: testObjectsFactory itemSellByTheStore To: cartId.
 	
 	
+	cartItems := (Dictionary new).
+	cartItems at: testObjectsFactory itemSellByTheStore put:2.
 	"self assert: (cartInterface includes: 2 Of: testObjectsFactory itemSellByTheStore On: cartId)."
 	
-	self assert: (cartInterface listCart: cartId) equals: (testObjectsFactory itemSellByTheStore , '|2')! !
+	self assert: (cartInterface listCart: cartId) equals: cartItems.
+	self assert: cartInterface numberOfCarts equals: 1.! !
 
-!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/9/2024 16:10:21'!
+!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 13:17:51'!
 test05anUnknownCartCannotBeListedAndTheOtherCartsRemainsTheSame
 
 
-	| clientAutenticator clientId password cartInterface unknownCartId knownCartId |
+	| clientAutenticator clientId password cartInterface unknownCartId knownCartId previousNumberOfCarts |
 	
 	clientId := testObjectsFactory validUserId .
 	password := testObjectsFactory validUserPassword .
@@ -108,6 +115,9 @@ test05anUnknownCartCannotBeListedAndTheOtherCartsRemainsTheSame
 	cartInterface := CartInterface with: testObjectsFactory .
 	
 	knownCartId := cartInterface createCartTo: clientId with: password  throught: clientAutenticator.
+	
+	previousNumberOfCarts := cartInterface numberOfCarts.
+	
 	unknownCartId := cartInterface createCartId.
 	
 	self 
@@ -115,11 +125,12 @@ test05anUnknownCartCannotBeListedAndTheOtherCartsRemainsTheSame
 		raise: Error - MessageNotUnderstood
 		withExceptionDo: [ :anError |
 			self assert: anError messageText = CartInterface unknownCartId.
-			self assert: (cartInterface listCart: knownCartId) equals: '']
+			self assert: (cartInterface listCart: knownCartId) isEmpty.
+			self assert: cartInterface numberOfCarts = previousNumberOfCarts]
 
 	! !
 
-!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/11/2024 16:40:49'!
+!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 12:45:03'!
 test06aKnownCartCanBeCheckedOut
 
 
@@ -142,11 +153,126 @@ test06aKnownCartCanBeCheckedOut
 	
 	
 	"Tendria que hacer el checkOutCart para que le mande a la interfaz y esta cree el cashier y forwardee a cart para que pueda hacer el checkout"
+	
+	"Por ahora asumo que checkOutCart devuelve el total de los productos por ahora"
 	self assert: (cartInterface 
 		checkOutCart: cartId 
 		withCardNumber: validCreditCardNumber 
 		withExpirationDate: validCreditCardExpirationDate 
 		withOwnerName: validCreditCardOwnersName) equals: (testObjectsFactory itemSellByTheStorePrice * 2)
+	! !
+
+!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 13:18:53'!
+test07anUnknownCartCannotBeCheckedOut
+
+
+	| clientAutenticator clientId password cartInterface cartId validCreditCardExpirationDate validCreditCardNumber validCreditCardOwnersName previousNumberOfCarts unknownCartId |
+	
+	clientId := testObjectsFactory validUserId .
+	password := testObjectsFactory validUserPassword .
+	
+	clientAutenticator := testObjectsFactory createClientAutenticator.
+	
+	cartInterface := CartInterface with: testObjectsFactory .
+	
+	cartId := cartInterface createCartTo: clientId with: password  throught: clientAutenticator.
+	
+	cartInterface add: 2 Of: testObjectsFactory itemSellByTheStore To: cartId.
+	
+	validCreditCardNumber := testObjectsFactory validCreditCardNumber.
+	validCreditCardExpirationDate := testObjectsFactory validCreditCardExpirationDate .
+	validCreditCardOwnersName := testObjectsFactory validCreditCardOwnersName .
+	
+	previousNumberOfCarts := cartInterface numberOfCarts.
+	
+	unknownCartId := cartInterface createCartId.
+	
+	
+	self 
+		should: [ cartInterface 
+			checkOutCart:  unknownCartId
+			withCardNumber:  validCreditCardNumber 
+			withExpirationDate:  validCreditCardExpirationDate 
+			withOwnerName: validCreditCardOwnersName ]
+		raise: Error - MessageNotUnderstood
+		withExceptionDo: [ :anError |
+			self assert: anError messageText = CartInterface unknownCartId.
+			self assert: cartInterface numberOfCarts = previousNumberOfCarts]
+	! !
+
+!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 13:46:34'!
+test08
+
+
+	| clientAutenticator clientId password cartInterface cartId validCreditCardExpirationDate validCreditCardNumber validCreditCardOwnersName previousNumberOfCarts unknownCartId |
+	
+	clientId := testObjectsFactory validUserId .
+	password := testObjectsFactory validUserPassword .
+	
+	clientAutenticator := testObjectsFactory createClientAutenticator.
+	
+	cartInterface := CartInterface with: testObjectsFactory .
+	
+	cartId := cartInterface createCartTo: clientId with: password  throught: clientAutenticator.
+	
+	cartInterface add: 2 Of: testObjectsFactory itemSellByTheStore To: cartId.
+	
+	validCreditCardNumber := testObjectsFactory validCreditCardNumber.
+	validCreditCardExpirationDate := testObjectsFactory validCreditCardExpirationDate .
+	validCreditCardOwnersName := testObjectsFactory validCreditCardOwnersName .
+	
+	previousNumberOfCarts := cartInterface numberOfCarts.
+	
+	unknownCartId := cartInterface createCartId.
+	
+	
+	self 
+		should: [ cartInterface 
+			checkOutCart:  unknownCartId
+			withCardNumber:  validCreditCardNumber 
+			withExpirationDate:  validCreditCardExpirationDate 
+			withOwnerName: validCreditCardOwnersName ]
+		raise: Error - MessageNotUnderstood
+		withExceptionDo: [ :anError |
+			self assert: anError messageText = CartInterface unknownCartId.
+			self assert: cartInterface numberOfCarts = previousNumberOfCarts]
+	! !
+
+!CartInterfaceTest methodsFor: 'tests' stamp: 'jcm 11/12/2024 13:52:12'!
+test08aValidCustomerKnowsItsPurchaseRecord
+
+
+	| clientAutenticator clientId password cartInterface cartId validCreditCardExpirationDate validCreditCardNumber validCreditCardOwnersName previousNumberOfCarts unknownCartId |
+	
+	clientId := testObjectsFactory validUserId .
+	password := testObjectsFactory validUserPassword .
+	
+	clientAutenticator := testObjectsFactory createClientAutenticator.
+	
+	cartInterface := CartInterface with: testObjectsFactory .
+	
+	cartId := cartInterface createCartTo: clientId with: password  throught: clientAutenticator.
+	
+	cartInterface add: 2 Of: testObjectsFactory itemSellByTheStore To: cartId.
+	
+	validCreditCardNumber := testObjectsFactory validCreditCardNumber.
+	validCreditCardExpirationDate := testObjectsFactory validCreditCardExpirationDate .
+	validCreditCardOwnersName := testObjectsFactory validCreditCardOwnersName .
+	
+	previousNumberOfCarts := cartInterface numberOfCarts.
+	
+	unknownCartId := cartInterface createCartId.
+	
+	"Ahora si tengo que crear una estructura para almacenar las Sales por cada cliente"
+	
+	cartInterface 
+		checkOutCart: cartId 
+		withCardNumber: validCreditCardNumber 
+		withExpirationDate: validCreditCardExpirationDate 
+		withOwnerName: validCreditCardOwnersName.
+	
+
+	self assert: (cartInterface listPurchasesOf: clientId with: password) total equals: (testObjectsFactory itemSellByTheStorePrice * 2).
 	! !
 
 
@@ -535,16 +661,10 @@ itemsAsString
 	^string
 	! !
 
-!Cart methodsFor: 'items' stamp: 'jcm 11/9/2024 15:53:52'!
+!Cart methodsFor: 'items' stamp: 'jcm 11/12/2024 12:29:09'!
 listItems
 
-	| string |
-	
-	string := ''.
-	
-	items keysAndValuesDo: [:key :value | string := string , key , '|' , (value asString)].
-	
-	^string
+	^items copy
 	! !
 
 
@@ -610,6 +730,11 @@ listCart: aCartId
 	^cart listItems.
 	! !
 
+!CartInterface methodsFor: 'listCart' stamp: 'jcm 11/12/2024 12:31:52'!
+numberOfCarts
+
+	^carts size! !
+
 
 !CartInterface methodsFor: 'assert' stamp: 'jcm 11/9/2024 14:39:34'!
 assertValidCartId: aCartId.
@@ -625,32 +750,32 @@ initializeWith: anObjectsFactory
 	carts := OrderedCollection new.! !
 
 
-!CartInterface methodsFor: 'checkOutCart' stamp: 'jcm 11/11/2024 17:21:54'!
+!CartInterface methodsFor: 'checkOutCart' stamp: 'jcm 11/12/2024 13:54:31'!
 checkOutCart: cartsId withCardNumber: creditCardNumber withExpirationDate: creditCardExpirationDate withOwnerName: creditCardOwnersName
 
-	| creditCard merchantProcesor cashier cart transaction transactionsId |
+	| creditCard merchantProcesor cashier cart recibo |
+	
+	self assertValidCartId: cartsId.
 	
 	creditCard := CreditCard number: creditCardNumber expiringOn: creditCardExpirationDate ownersName: creditCardOwnersName .
 	merchantProcesor := MerchantProcesor with: objectsFactory defaultDebitBehavior.
 	cart := carts at: cartsId.
 	cashier := Cashier toCheckout: cart charging: creditCard throught: merchantProcesor on: objectsFactory today registeringOn: OrderedCollection new.
 	
-	"Si llego hasta aca es porque no tiro error, entonces habria que devolver el transactionID en donde va a estar alocada la compra"
-	"Tendria que hacer que cashier checkout me devuelva como un recibo en donde tenga la lista de lo que compre y el total"
-	
-	transaction := cashier checkOut.
 	
 	"Asumo que transaction ID no es la el id de la transaccion de la tarjeta de credito para trascear la transaccion, sino que es el id del supermercado para poder trascear el recibo"
 	
-	"El tema que no tendria que ser responsabilidad de la cartInterface guardar las transacciones, por lo tanto no lo almaceno en esta, sino que la almaceno en la cashier"
+	"La idea es hacer que cashier checkout me devuelva un recibo para asi poder almacenarlo en un diccionario bajo el id del cliente"
 	
 	
-	^self transactionsId
+	recibo := cashier checkOut.
+	
+	
 	
 	! !
 
 
-!CartInterface methodsFor: 'cart' stamp: 'jcm 11/9/2024 16:05:03'!
+!CartInterface methodsFor: 'cart' stamp: 'jcm 11/12/2024 13:44:58'!
 add: anAmountOfItems Of: aTypeOfItem To: aCartId 
 
 	| cart |
@@ -661,7 +786,7 @@ add: anAmountOfItems Of: aTypeOfItem To: aCartId
 	
 	cart add: anAmountOfItems of: aTypeOfItem.
 	
-	^'0|OK'
+	
 	! !
 
 !CartInterface methodsFor: 'cart' stamp: 'jcm 11/9/2024 17:21:17'!

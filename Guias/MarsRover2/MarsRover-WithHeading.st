@@ -93,8 +93,8 @@ test05MarsRoverWithoutInstructionBeginsWithEmptyWindow
 	
 	self assert: window isEmpty.! !
 
-!MarsRover2Test methodsFor: 'tests' stamp: 'jcm 11/13/2024 12:26:57'!
-test06MarsRoverRememberInstructionWithWindowObserver
+!MarsRover2Test methodsFor: 'tests' stamp: 'jcm 11/14/2024 17:33:33'!
+test06MarsRoverRememberInstructionWithWindowObservingPositionAndHeading
 
 	| marsRover expectedPositionAndHeading window |
 	"Aca me doy cuenta de la constante repeticion y aplicaria el refactor en este test" 
@@ -113,6 +113,114 @@ test06MarsRoverRememberInstructionWithWindowObserver
 
 	self assert: (window hasEqualPositionAndHeadings: expectedPositionAndHeading).
 
+	! !
+
+!MarsRover2Test methodsFor: 'tests' stamp: 'jcm 11/14/2024 17:35:49'!
+test07MarsRoverRememberInstructionWithWindowObservingOnlyPosition
+
+	| marsRover window |
+	"Aca me doy cuenta de la constante repeticion y aplicaria el refactor en este test" 
+	
+	marsRover := MarsRover at: 0@1 heading: MarsRoverHeadingEast.
+	window := Window new.
+	
+	marsRover attachPosition: window.
+	
+	marsRover  process: 'flbr'.
+
+	self assert: (window hasEqualPosition: 1@0).
+
+	! !
+
+!MarsRover2Test methodsFor: 'tests' stamp: 'jcm 11/14/2024 17:37:06'!
+test08MarsRoverRememberInstructionWithWindowObservingOnlyHeading
+
+	| marsRover window |
+	"Aca me doy cuenta de la constante repeticion y aplicaria el refactor en este test" 
+	
+	marsRover := MarsRover at: 0@1 heading: MarsRoverHeadingEast.
+	window := Window new.
+	
+	marsRover attachHeading: window.
+	
+	marsRover  process: 'flbr'.
+
+	self assert: (window hasEqualHeading: MarsRoverHeadingEast).
+
+	! !
+
+!MarsRover2Test methodsFor: 'tests' stamp: 'jcm 11/14/2024 17:47:25'!
+test09MarsRoverRememberInstructionWithMoreThanOneObserver
+
+	| marsRover window log expectedLog |
+	"Aca me doy cuenta de la constante repeticion y aplicaria el refactor en este test" 
+	
+	marsRover := MarsRover at: 0@1 heading: MarsRoverHeadingEast.
+	window := Window new.
+	log := Log new.
+	
+	marsRover attachHeading: window.
+	marsRover attachPosition: log.
+	
+	marsRover  process: 'flbr'.
+	
+	expectedLog := OrderedCollection new.
+	
+	expectedLog add: 1@1.
+	expectedLog add: 1@0.
+
+	self assert: (log has: expectedLog).
+	self assert: (window hasEqualHeading: MarsRoverHeadingEast)
+	! !
+
+!MarsRover2Test methodsFor: 'tests' stamp: 'jcm 11/14/2024 17:49:39'!
+test10MarsRoverRememberInstructionWithMoreThanOneObserver
+
+	| marsRover window log expectedLog |
+	"Aca me doy cuenta de la constante repeticion y aplicaria el refactor en este test" 
+	
+	marsRover := MarsRover at: 0@1 heading: MarsRoverHeadingEast.
+	window := Window new.
+	log := Log new.
+	
+	marsRover attachHeading: window.
+	marsRover attachPosition: log.
+	
+	marsRover  process: 'flbr'.
+	
+	expectedLog := OrderedCollection new.
+	
+	expectedLog add: 1@1.
+	expectedLog add: 1@0.
+
+	self assert: (log has: expectedLog).
+	self assert: (window hasEqualHeading: MarsRoverHeadingEast)
+	! !
+
+!MarsRover2Test methodsFor: 'tests' stamp: 'jcm 11/14/2024 18:01:09'!
+test11MarsRoverRememberInstructionsObservingHeadingAndPosition
+
+	| marsRover log expectedLogHeading expectedLogPositions |
+	"Aca me doy cuenta de la constante repeticion y aplicaria el refactor en este test" 
+	
+	marsRover := MarsRover at: 0@1 heading: MarsRoverHeadingEast.
+	log := Log new.
+	
+	marsRover attachPosition: log.
+	marsRover attachHeading: log.
+	
+	marsRover  process: 'flbr'.
+	
+	expectedLogHeading := OrderedCollection new.	
+	expectedLogPositions := OrderedCollection new.
+	
+	expectedLogPositions add: 1@1.
+	expectedLogHeading add: MarsRoverHeadingNorth new .
+	expectedLogPositions add: 1@0.
+	expectedLogHeading add: MarsRoverHeadingEast new .
+
+	self assert: (log hasEqualPositions: expectedLogPositions AndHeadings: expectedLogHeading).
+	
 	! !
 
 
@@ -325,50 +433,62 @@ assertIsAt: newPosition heading: newHeadingType afterProcessing: commands whenSt
 
 !classDefinition: #Log category: #'MarsRover-WithHeading'!
 Object subclass: #Log
-	instanceVariableNames: 'data'
+	instanceVariableNames: 'headings positions'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'MarsRover-WithHeading'!
 
-!Log methodsFor: 'notify' stamp: 'jcm 11/13/2024 11:51:43'!
+!Log methodsFor: 'notify' stamp: 'jcm 11/14/2024 17:55:08'!
 notifyChangeInHeading: aNewHead
 
 
-	data add: aNewHead.! !
+	headings add: aNewHead.! !
 
-!Log methodsFor: 'notify' stamp: 'jcm 11/13/2024 11:51:59'!
+!Log methodsFor: 'notify' stamp: 'jcm 11/14/2024 17:55:03'!
 notifyChangeInPosition: aNewPosition
 
 
-	data add: aNewPosition.! !
+	positions add: aNewPosition.! !
 
 
-!Log methodsFor: 'testing' stamp: 'jcm 11/13/2024 11:58:32'!
+!Log methodsFor: 'testing' stamp: 'jcm 11/14/2024 17:56:24'!
 has: expectedPositions
 
-	^data = expectedPositions ! !
+	^positions = expectedPositions ! !
 
-!Log methodsFor: 'testing' stamp: 'jcm 11/13/2024 12:02:54'!
+!Log methodsFor: 'testing' stamp: 'jcm 11/14/2024 17:55:55'!
 hasEqualHeadings: expectedHeadings
 	
 	"Chequeo a mano si tienen el mismo tipo"
 	| index |
 	index := 0.
-	^data allSatisfy: [:log | index := index + 1.
+	^headings allSatisfy: [:log | index := index + 1.
 		log isKindOf: ((expectedHeadings at: index) class)]
 	! !
 
-!Log methodsFor: 'testing' stamp: 'jcm 11/13/2024 11:54:30'!
+!Log methodsFor: 'testing' stamp: 'jcm 11/14/2024 18:02:47'!
+hasEqualPositions: expectedPositions AndHeadings: expectedHeadings
+	
+	"Chequeo a mano si tienen el mismo tipo"
+	| index |
+	index := 0.
+
+	^(self hasEqualHeadings: expectedHeadings)
+	& self has: expectedPositions
+	! !
+
+!Log methodsFor: 'testing' stamp: 'jcm 11/14/2024 17:56:16'!
 isEmpty
 
-	^data isEmpty! !
+	^positions isEmpty & headings isEmpty ! !
 
 
-!Log methodsFor: 'instance creation' stamp: 'jcm 11/13/2024 11:55:24'!
+!Log methodsFor: 'instance creation' stamp: 'jcm 11/14/2024 17:55:27'!
 initialize
 
 	
-	data := OrderedCollection new.! !
+	positions := OrderedCollection new.
+	headings  := OrderedCollection new.! !
 
 
 !classDefinition: #MarsRover category: #'MarsRover-WithHeading'!
@@ -749,6 +869,18 @@ Object subclass: #Window
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'MarsRover-WithHeading'!
+
+!Window methodsFor: 'testing' stamp: 'jcm 11/14/2024 17:37:38'!
+hasEqualHeading: expectedHeading
+	
+	
+	^((data at: 'Heading') class) = expectedHeading! !
+
+!Window methodsFor: 'testing' stamp: 'jcm 11/14/2024 17:35:08'!
+hasEqualPosition: expectedPosition
+	
+	
+	^(data at: 'Position') = expectedPosition ! !
 
 !Window methodsFor: 'testing' stamp: 'jcm 11/13/2024 12:29:05'!
 hasEqualPositionAndHeadings: expectedPositionAndHeading 
